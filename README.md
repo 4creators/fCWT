@@ -1,4 +1,4 @@
-![](https://github.com/fastlib/fCWT/blob/main/img/githubart.png)
+![](docs/img/githubart.png)
 
 The fast Continuous Wavelet Transform (fCWT)
 ====================================
@@ -15,7 +15,7 @@ UPDATE (12-01-2023)
 ===================
 
 New version available:
-- fCWT can be seamlessly used in Python (see [Jupyter Notebook](https://github.com/fastlib/fCWT/blob/main/tutorial.ipynb))
+- fCWT can be seamlessly used in Python (see [Jupyter Notebook](/samples/jupyter/tutorial.ipynb))
 - Interface upgrade: Use frequencies instead of scales and octaves!
 - Fixed small memory allignment bugs
 
@@ -31,9 +31,9 @@ Features
 
 |fCWT for real-time audio and speech analysis                    |fCWT for high-resolution in-vivo Neuropixel data analysis       |
 |:--------------------------------------------------------------:|:--------------------------------------------------------------:|
-|<img src="https://github.com/fastlib/fCWT/blob/main/img/audio.png" alt="fcwtaudio" width="400"/>|<img src="https://github.com/fastlib/fCWT/blob/main/img/eeg.png" alt="fcwteeg" width="400"/>|
+|<img src="/docs/img/audio.png" alt="fcwtaudio" width="400"/>|<img src="/docs/img/eeg.png" alt="fcwteeg" width="400"/>|
 |**fCWT for real-time Electroencephalography (EEG) analysis**    |**fCWT for real-time engine diagnostics**                       |
-|<img src="https://github.com/fastlib/fCWT/blob/main/img/eeg2.png" alt="fcwteeg2" width="400"/>|<img src="https://github.com/fastlib/fCWT/blob/main/img/engine.png" alt="fcwtengine" width="400"/>|
+|<img src="/docs/img/eeg2.png" alt="fcwteeg2" width="400"/>|<img src="/docs/img/engine.png" alt="fcwtengine" width="400"/>|
 
 *Based on C++ performance. **fCWT is the fastest CWT library in C++, Python and Matlab!** Please see the benchmark section for more details. Raise an issue if you found a new/faster implementation. I will try to add it to benchmark! 
 
@@ -55,7 +55,7 @@ $ git clone https://github.com/fastlib/fCWT.git
 $ cd fCWT
 $ pip install .
 ```
-See this [Jupyter Notebook](https://github.com/fastlib/fCWT/blob/main/tutorial.ipynb) for documentation.
+See this [Jupyter Notebook](https://github.com/fastlib/fCWT/samples/jupyter/tutorial.ipynb) for documentation.
 
 Matlab
 ---
@@ -134,7 +134,7 @@ fcwt.plot(signal, fs, f0=f0, f1=f1, fn=fn)
 ```
 
 Output:
-![](https://github.com/fastlib/fCWT/blob/main/img/pythontest.png)
+![](/docs/img/pythontest.png)
 
 C++ Example
 =======
@@ -329,7 +329,7 @@ If one wants to reproduce the benchmark results as stated in the article, one ha
 1. Run fCWT with: `$ ./fCWT_example -fcwt 100000 8`,
 2. Run RWave with: `$ ./fCWT_example -rwave 100000 8`,
 3. Run Wavelib with: `$ ./fCWT_example -wavelib 100000 8`,
-4. Run additional Python, Matlab and Mathematica scripts found in `/src/benchmark`
+4. Run additional Python, Matlab and Mathematica scripts found in `/src/bench`
 
 By default, the source code performs 10 runs for demonstration purposes. To match the number of runs in the paper, adjust the `runs` variable in `benchmark.cpp:132`. It is recommended to close any background processes. 
 
