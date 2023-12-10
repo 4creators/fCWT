@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.24)
 
 if (NOT (UNIX OR WIN32))
   message(FATAL_ERROR "unsupported target platform")
@@ -16,36 +16,31 @@ if(NOT DEFINED CMAKE_BUILD_TYPE OR NOT CMAKE_BUILD_TYPE)
 endif()
 message("Build type is ${CMAKE_BUILD_TYPE}")
 
+set(CMAKE_CURRENT_BINARY_DIR ${CMAKE_BINARY_DIR})
+
 #Installation options
-if(UNIX)
-  set(FCWT_MATLAB_DIR "../MATLAB" CACHE
+
+  set(FCWT_MATLAB_DIR "../samples/matlab" CACHE
    STRING "Name of the build directory for the MATLAB MEX-files")
-  set(FCWT_CMAKE_INSTALL_DIR "share/fcwt/cmake" CACHE
-    STRING "Name of the installation directory for the CMake stuff relative to ${CMAKE_INSTALL_PREFIX}")
   set(FCWT_LIB_INSTALL_DIR "lib" CACHE
     STRING "Name of the installation directory for the libraries relative to ${CMAKE_INSTALL_PREFIX}")
   set(FCWT_INCLUDE_INSTALL_DIR "include" CACHE
     STRING "Name of the installation directory for the includes relative to ${CMAKE_INSTALL_PREFIX}")
+
+if(UNIX)
+  set(FCWT_CMAKE_INSTALL_DIR "share/fcwt/cmake" CACHE
+    STRING "Name of the installation directory for the CMake stuff relative to ${CMAKE_INSTALL_PREFIX}")
+
 elseif(WIN32)
-  # On Windows, CMAKE_INSTALL_PREFIX is $ENV{ProgramFiles}\\${CMAKE_PROJECT_NAME} by default. In turn:
-  #   - on AMD64: ProgramFiles=%ProgramFiles%
-  #   - on   x86: ProgramFiles=%ProgramFiles(x86)%
-  # See: https://msdn.microsoft.com/en-us/library/aa384274.aspx
-  set(FCWT_MATLAB_DIR "../MATLAB" CACHE
-   STRING "Name of the build directory for the MATLAB MEX-files")
   set(FCWT_CMAKE_INSTALL_DIR "cmake" CACHE
     STRING "Name of share directory relative to ${CMAKE_INSTALL_PREFIX}")
-  set(FCWT_LIB_INSTALL_DIR "lib" CACHE
-    STRING "Name of the installation directory for the libraries relative to ${CMAKE_INSTALL_PREFIX}")
-   set(FCWT_INCLUDE_INSTALL_DIR "include" CACHE
-    STRING "Name of the installation directory for the includes relative to ${CMAKE_INSTALL_PREFIX}")
 endif()
 
 # set the project name
-project(fCWT VERSION 2.0 DESCRIPTION "Highly optimized implementation of the Continuous Wavelet Transform")
+project(fcwt VERSION 2.0 DESCRIPTION "Highly optimized implementation of the Continuous Wavelet Transform")
 
 # specify the C++ standard
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
@@ -55,45 +50,45 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 if(UNIX)
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -mavx -O2")
 elseif(WIN32)
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /arch:AVX /O2 /W1")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20 /arch:AVX /O2 /W1")
 endif()
 
 #set cmake linker flags
 link_libraries("-lm")
 
-link_directories(${PROJECT_SOURCE_DIR})
+link_directories("${PROJECT_SOURCE_DIR}/deps/libs")
 
 set(libraryheaders 
-    "./src/fcwt/fcwt.h"
+    "./src/fcwt.h"
 )
 set(implementationheaders 
-    "./src/main.h" 
+    "./samples/cpp/main.h" 
 ) 
 set(benchmarkheaders
-    "./src/benchmark.h"
-    "./src/fcwt/fcwt.h"
-    "./src/rwave-bench.h" 
-    "./src/wavelib-bench.h"
+    "./src/bench/benchmark.h"
+    "./src/fcwt.h"
+    "./src/bench/rwave-bench.h" 
+    "./src/bench/wavelib-bench.h"
 )
 
 set(librarysources 
-    "./src/fcwt/fcwt.cpp"
+    "./src/fcwt.cpp"
 )
 set(implementationsources 
-    "./src/main.cpp" 
+    "./samples/cpp/main.cpp" 
 )
 set(benchmarksources
-    "./src/benchmark.cpp"
-    "./src/fcwt/fcwt.cpp"
-    "./src/rwave-bench.cpp"
-    "./src/wavelib-bench.cpp"
+    "./src/bench/benchmark.cpp"
+    "./src/fcwt.cpp"
+    "./src/bench/rwave-bench.cpp"
+    "./src/bench/wavelib-bench.cpp"
 )
 
 set(headers ${libraryheaders} ${implementationheaders})
 set(sources ${librarysources} ${implementationsources})
 
 # targets 
-set(fcwt_library_target "fCWT")
+set(fcwt_library_target "fcwt")
 
 #library
 if(BUILD_SHARED_LIBS)
@@ -116,11 +111,13 @@ if(BUILD_BENCHMARK)
     add_executable(fCWT_benchmark ${benchmarkheaders} ${benchmarksources}) 
 endif()
 
-add_executable(fCWT_example ${headers} ${sources})
-include_directories("${PROJECT_SOURCE_DIR}/libs")
+add_executable(fcwt_example ${headers} ${sources})
+include_directories("${PROJECT_SOURCE_DIR}/deps/include")
+include_directories("${PROJECT_SOURCE_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR}/src/bench")
 include_directories("/usr/local/include")
-include_directories("${PROJECT_SOURCE_DIR}/src/MEX")
-link_directories("${PROJECT_SOURCE_DIR}/libs")
+include_directories("${PROJECT_SOURCE_DIR}/src/mex")
+link_directories("${PROJECT_SOURCE_DIR}/deps/libs")
 link_directories("/usr/local/lib")
 
 if(APPLE)
@@ -138,56 +135,36 @@ if(APPLE)
     set(OpenMP_iomp5_LIBRARY ${OpenMP_C_LIB_NAMES})
 endif()
 
-find_package(OpenMP REQUIRED)
+find_package(OpenMP 5.0)
+
 if (OPENMP_FOUND)
     if(APPLE)
         target_include_directories(${fcwt_library_target} PUBLIC ${OpenMP_INCLUDES})
         target_link_directories(${fcwt_library_target} PUBLIC ${OpenMP_LIBRARIES})
         target_link_libraries(${fcwt_library_target} PUBLIC "-lomp")
 
-        target_include_directories(fCWT_example PUBLIC ${OpenMP_INCLUDES})
-        target_link_directories(fCWT_example PUBLIC ${OpenMP_LIBRARIES})
-        target_link_libraries(fCWT_example PUBLIC "-lomp")
+        target_include_directories(fcwt_example PUBLIC ${OpenMP_INCLUDES})
+        target_link_directories(fcwt_example PUBLIC ${OpenMP_LIBRARIES})
+        target_link_libraries(fcwt_example PUBLIC "-lomp")
 
         if(BUILD_BENCHMARK)
-            target_include_directories(fCWT_benchmark PUBLIC ${OpenMP_INCLUDES})
-            target_link_directories(fCWT_benchmark PUBLIC ${OpenMP_LIBRARIES})
-            target_link_libraries(fCWT_benchmark PUBLIC "-lomp")
+            target_include_directories(fcwt_benchmark PUBLIC ${OpenMP_INCLUDES})
+            target_link_directories(fcwt_benchmark PUBLIC ${OpenMP_LIBRARIES})
+            target_link_libraries(fcwt_benchmark PUBLIC "-lomp")
+        endif()
+    elseif(WIN32)
+        target_link_libraries(${fcwt_library_target} PUBLIC "libomp.lib")
+        target_link_libraries(fcwt_example PUBLIC "libomp.lib")
+        if(BUILD_BENCHMARK)
+            target_link_libraries(fcwt_benchmark PUBLIC "libomp.lib")
         endif()
     endif()
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+else()
+    add_compile_definitions (SINGLE_THREAD)
 endif()
-# if(OpenMP_FOUND)
-#     message("OpenMP found")
-#     if(APPLE)
-#         target_include_directories(${fcwt_library_target} PUBLIC ${OpenMP_INCLUDES})
-#         target_link_directories(${fcwt_library_target} PUBLIC ${OpenMP_LIBRARIES})
-#         target_link_libraries(${fcwt_library_target} PUBLIC "-lomp")
-
-#         target_include_directories(fCWT_example PUBLIC ${OpenMP_INCLUDES})
-#         target_link_directories(fCWT_example PUBLIC ${OpenMP_LIBRARIES})
-#         target_link_libraries(fCWT_example PUBLIC "-lomp")
-
-#         if(BUILD_BENCHMARK)
-#             target_include_directories(fCWT_benchmark PUBLIC ${OpenMP_INCLUDES})
-#             target_link_directories(fCWT_benchmark PUBLIC ${OpenMP_LIBRARIES})
-#             target_link_libraries(fCWT_benchmark PUBLIC "-lomp")
-#         endif()
-#     else()
-#         if(UNIX)
-#             target_link_libraries(${fcwt_library_target} PUBLIC OpenMP::OpenMP_CXX)
-#             target_link_libraries(fCWT_example PUBLIC OpenMP::OpenMP_CXX)
-#             if(BUILD_BENCHMARK)
-#                 target_link_libraries(fCWT_benchmark PUBLIC OpenMP::OpenMP_CXX)
-#             endif()
-#         endif()
-#     endif()
-
-#     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-#     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-# endif()
 
 if(NOT USE_OWN_FFTW)
     #check if we are on a arm64 mac
@@ -197,14 +174,14 @@ if(NOT USE_OWN_FFTW)
         find_library (
             FFTW
             NAMES fftw3fmac # what to look for
-            HINTS "${PROJECT_SOURCE_DIR}/libs" # where to look
+            HINTS "${PROJECT_SOURCE_DIR}/deps/libs" # where to look
             NO_DEFAULT_PATH # do not search system default paths
             REQUIRED
         )
         find_library (
             FFTW_OMP
             NAMES fftw3f_ompmac # what to look for
-            HINTS "${PROJECT_SOURCE_DIR}/libs" # where to look
+            HINTS "${PROJECT_SOURCE_DIR}/deps/libs" # where to look
             NO_DEFAULT_PATH # do not search system default paths
             REQUIRED
         )
@@ -216,14 +193,14 @@ if(NOT USE_OWN_FFTW)
         find_library (
             FFTW
             NAMES fftw3fl # what to look for
-            HINTS "${PROJECT_SOURCE_DIR}/libs" # where to look
+            HINTS "${PROJECT_SOURCE_DIR}/depse/libs" # where to look
             NO_DEFAULT_PATH # do not search system default paths
             REQUIRED
         )
         find_library (
             FFTW_OMP
             NAMES fftw3f_ompl # what to look for
-            HINTS "${PROJECT_SOURCE_DIR}/libs" # where to look
+            HINTS "${PROJECT_SOURCE_DIR}/deps/libs" # where to look
             NO_DEFAULT_PATH # do not search system default paths
             REQUIRED
         )
@@ -234,7 +211,7 @@ if(NOT USE_OWN_FFTW)
         find_library (
             FFTW
             NAMES fftw3f # what to look for
-            HINTS "${PROJECT_SOURCE_DIR}/libs" # where to look
+            HINTS "${PROJECT_SOURCE_DIR}/deps/libs" # where to look
             NO_DEFAULT_PATH # do not search system default paths
             REQUIRED
         )
@@ -275,9 +252,9 @@ endif()
 
 
 if(FFTW)
-    target_link_libraries(fCWT_example PRIVATE ${FFTW})
+    target_link_libraries(fcwt_example PRIVATE ${FFTW})
     if(BUILD_BENCHMARK)
-        target_link_libraries(fCWT_benchmark PRIVATE ${FFTW})
+        target_link_libraries(fcwt_benchmark PRIVATE ${FFTW})
     endif()
     target_link_libraries(${fcwt_library_target} PRIVATE ${FFTW})
 else()
@@ -286,9 +263,9 @@ endif()
 
 if(UNIX)
 	if(FFTW_OMP)
-		target_link_libraries(fCWT_example PRIVATE ${FFTW_OMP})
+		target_link_libraries(fcwt_example PRIVATE ${FFTW_OMP})
         if(BUILD_BENCHMARK)
-		    target_link_libraries(fCWT_benchmark PRIVATE ${FFTW_OMP})
+		    target_link_libraries(fcwt_benchmark PRIVATE ${FFTW_OMP})
         endif()
 		target_link_libraries(${fcwt_library_target} PRIVATE ${FFTW_OMP})
 	else()
@@ -300,15 +277,21 @@ if(BUILD_BENCHMARK)
     if (NOT WAVELIB)
         message(SEND_ERROR "Did not find wavelib. Please note that you need to install wavelib yourself. See README.md for more information.")
     else()
-        target_link_libraries(fCWT_benchmark PRIVATE ${WAVELIB})
+        target_link_libraries(fcwt_benchmark PRIVATE ${WAVELIB})
     endif()
 endif()
 
 if(WIN32)
-	file(COPY "${PROJECT_SOURCE_DIR}/libs/fftw3f.dll" DESTINATION ${PROJECT_BINARY_DIR}/Debug)
-	file(COPY "${PROJECT_SOURCE_DIR}/libs/fftw3f.lib" DESTINATION ${PROJECT_BINARY_DIR}/Debug)
-	file(COPY "${PROJECT_SOURCE_DIR}/libs/fftw3f.dll" DESTINATION ${PROJECT_BINARY_DIR}/Release)
-	file(COPY "${PROJECT_SOURCE_DIR}/libs/fftw3f.lib" DESTINATION ${PROJECT_BINARY_DIR}/Release)
+	file(COPY "${PROJECT_SOURCE_DIR}/deps/libs/fftw3f.dll" DESTINATION ${PROJECT_BINARY_DIR}/Debug)
+	file(COPY "${PROJECT_SOURCE_DIR}/deps/libs/fftw3f.lib" DESTINATION ${PROJECT_BINARY_DIR}/Debug)
+	file(COPY "${PROJECT_SOURCE_DIR}/deps/libs/fftw3f.dll" DESTINATION ${PROJECT_BINARY_DIR}/Release)
+	file(COPY "${PROJECT_SOURCE_DIR}/deps/libs/fftw3f.lib" DESTINATION ${PROJECT_BINARY_DIR}/Release)
+    if (OPENMP_FOUND)
+        file(COPY "${PROJECT_SOURCE_DIR}/deps/libs/libomp.dll" DESTINATION ${PROJECT_BINARY_DIR}/Debug)
+	    file(COPY "${PROJECT_SOURCE_DIR}/deps/libs/libomp.lib" DESTINATION ${PROJECT_BINARY_DIR}/Debug)
+        file(COPY "${PROJECT_SOURCE_DIR}/deps/libs/libomp.dll" DESTINATION ${PROJECT_BINARY_DIR}/Release)
+	    file(COPY "${PROJECT_SOURCE_DIR}/deps/libs/libomp.lib" DESTINATION ${PROJECT_BINARY_DIR}/Release)
+    endif()
     if(BUILD_BENCHMARK)
 	    file(COPY ${WAVELIB} DESTINATION ${PROJECT_BINARY_DIR}/Debug)
 	    file(COPY ${WAVELIB} DESTINATION ${PROJECT_BINARY_DIR}/Release)
@@ -326,7 +309,7 @@ if(BUILD_MATLAB)
     
     matlab_add_mex(
         NAME fCWTmex
-        SRC src/MEX/fcwtmex.cpp src/fcwt/fcwt.h src/fcwt/fcwt.cpp
+        SRC src/mex/fcwtmex.cpp src/fcwt.h src/fcwt.cpp
         OUTPUT_NAME ${FCWT_MATLAB_DIR}/fCWT
         LINK_TO ${FFTW} ${FFTW_OMP}
         R2018a
@@ -337,7 +320,7 @@ if(BUILD_MATLAB)
 
     matlab_add_mex(
         NAME fCWTmexplan
-        SRC src/MEX/fcwtplan.cpp src/fcwt/fcwt.h src/fcwt/fcwt.cpp
+        SRC src/mex/fcwtplan.cpp src/fcwt.h src/fcwt.cpp
         OUTPUT_NAME ${FCWT_MATLAB_DIR}/fCWT_create_plan
         LINK_TO ${FFTW} ${FFTW_OMP}
         R2018a

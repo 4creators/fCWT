@@ -1,0 +1,73 @@
+{
+    "version": 5,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 24,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "windows",
+            "displayName": "Windows Build Config",
+            "description": "Windows build settings",
+            "generator": "Visual Studio 17 2022",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/build/win",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "windows-clang",
+            "displayName": "Windows ClangCl Build Config",
+            "description": "Windows clangcl build settings",
+            "generator": "Visual Studio 17 2022",
+            "toolset": "ClangCL",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/build/win",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "windows-intel",
+            "displayName": "Windows Build Config",
+            "description": "Windows build settings",
+            "generator": "Visual Studio 17 2022",
+            "toolset": "Intel C++ Compiler 2024",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/build/win",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "apple",
+            "displayName": "Apple Build Config",
+            "description": "Apple build settings",
+            "binaryDir": "${sourceDir}/build/apple",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Apple"
+            }
+        },
+        {
+            "name": "unix",
+            "displayName": "Unix Build Config",
+            "description": "Unix build settings",
+            "binaryDir": "${sourceDir}/build/unix",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Unix"
+            }
+        }
+    ]
+}
